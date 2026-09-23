@@ -1,0 +1,6 @@
+'use client';
+import { useMemo, useState } from 'react';
+import { Search, SlidersHorizontal } from 'lucide-react';
+import { categories, foods } from '@/data/foods';
+import { FoodCard } from './food-card';
+export function MenuBrowser(){const [query,setQuery]=useState('');const [category,setCategory]=useState('همه');const [available,setAvailable]=useState(false);const shown=useMemo(()=>foods.filter(f=>(category==='همه'||f.category===category)&&f.title.includes(query)&&(!available||f.available)),[query,category,available]);return <><div className="menu-tools"><label className="search-box"><Search/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="جستجوی غذا..."/></label><button onClick={()=>setAvailable(v=>!v)} className={available?'filter-active':''}><SlidersHorizontal/>فقط موجود</button></div><div className="category-tabs" role="tablist">{categories.map(c=><button role="tab" aria-selected={c===category} className={c===category?'active':''} onClick={()=>setCategory(c)} key={c}>{c}</button>)}</div>{shown.length?<div className="food-grid menu-grid">{shown.map(food=><FoodCard key={food.id} food={food}/>)}</div>:<div className="no-results"><Search/><h3>غذایی پیدا نشد</h3><p>عبارت دیگری را امتحان کنید.</p></div>}</>}
