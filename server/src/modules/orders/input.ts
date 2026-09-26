@@ -1,0 +1,6 @@
+import { z } from 'zod';
+export const lineInputSchema=z.object({productId:z.uuid(),quantity:z.number().int().min(1).max(20),optionIds:z.array(z.uuid()).max(30).default([]),note:z.string().trim().max(160).optional()});
+export const pricingRequestSchema=z.object({couponCode:z.string().trim().max(40).optional(),fulfillmentType:z.enum(['delivery','pickup']).default('delivery'),items:z.array(lineInputSchema).min(1).max(50)});
+export const createOrderSchema=pricingRequestSchema.extend({customer:z.object({name:z.string().trim().min(2).max(100),mobile:z.string().trim().min(10).max(24)}),address:z.object({address:z.string().trim().max(500).optional(),plaque:z.string().trim().max(20).optional(),unit:z.string().trim().max(20).optional(),note:z.string().trim().max(300).optional()}).optional(),requestedTime:z.string().trim().max(40).optional(),paymentMethod:z.enum(['online','on_delivery']),customerNote:z.string().trim().max(300).optional()}).superRefine((value,ctx)=>{if(value.fulfillmentType==='delivery'&&!value.address?.address)ctx.addIssue({code:'custom',path:['address','address'],message:'نشانی برای ارسال الزامی است.'})});
+export type PricingRequest=z.infer<typeof pricingRequestSchema>;
+export type CreateOrderRequest=z.infer<typeof createOrderSchema>;

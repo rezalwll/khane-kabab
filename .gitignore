@@ -1,5 +1,6 @@
 # dependencies
 /node_modules
+/server/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -35,6 +36,10 @@ yarn-error.log*
 .vercel
 next-env.d.ts
 /dist/
+/server/dist/
+/server/coverage/
+/server/.drizzle/
+/server/postgres-data/
 /.wrangler/
 /outputs/
 /work/
