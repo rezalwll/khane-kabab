@@ -17,7 +17,7 @@ const addonsByCategory: Record<FoodCategory, Addon[]> = {
   'پیش‌غذا':[shared.doogh], 'سالاد':[shared.yogurt,shared.doogh], 'نوشیدنی':[],
 };
 type FoodSeed = {id:string;title:string;price:number;category:FoodCategory;image:keyof typeof images;shortDescription:string;fullDescription:string;featured?:boolean;available?:boolean;tags?:FoodTag[];gallery?:(keyof typeof images)[]};
-const item = (seed: FoodSeed): Food => ({...seed,slug:seed.id,image:images[seed.image],gallery:(seed.gallery??[seed.image,'rice']).map((key)=>images[key]),featured:seed.featured??false,available:seed.available??true,tags:seed.tags??(seed.featured?['پرفروش']:[]),rating:seed.featured?4.8:4.6,reviewsCount:seed.featured?128:64,addons:addonsByCategory[seed.category]});
+const item = (seed: FoodSeed): Food => ({...seed,slug:seed.id,image:images[seed.image],gallery:(seed.gallery??[seed.image,'rice']).map((key)=>images[key]),featured:seed.featured??false,available:seed.available??true,tags:seed.tags??(seed.featured?['پیشنهاد خانه کباب']:[]),addons:addonsByCategory[seed.category]});
 
 export const foods: Food[] = [
   item({id:'chelo-kabab-koobideh',title:'چلوکباب کوبیده',price:318000,category:'کباب‌ها',image:'kebab',featured:true,shortDescription:'دو سیخ کوبیده تازه‌چرخ با برنج ایرانی و گوجه کبابی',fullDescription:'کوبیده تازه‌چرخ‌شده با پیاز و نمک، دو سیخ روی آتش و همراه برنج ایرانی زعفرانی، گوجه کبابی و کره.'}),

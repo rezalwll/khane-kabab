@@ -1,3 +1,3 @@
 import { Leaf, PackageCheck, Sparkles, Truck } from 'lucide-react';
-const features=[[Sparkles,'طعم اصیل','مزه‌ای از دل آشپزخانه ایرانی'],[Leaf,'مواد اولیه تازه','انتخاب روزانه و باکیفیت'],[PackageCheck,'بسته‌بندی مناسب','حفظ کیفیت تا در خانه'],[Truck,'ارسال سریع','تحویل گرم و به‌موقع']] as const;
+const features=[[Sparkles,'طعم ایرانی','مزه‌ای از دل آشپزخانه ایرانی'],[Leaf,'مواد اولیه تازه','آماده برای پخت روز'],[PackageCheck,'بسته‌بندی سفارش','مناسب برای دریافت غذا'],[Truck,'روش دریافت','انتخاب پیک یا دریافت حضوری']] as const;
 export function WhyUs(){return <section className="why container section"><div className="center-heading"><span>چرا ما؟</span><h2>سفارش شما، گرم و تازه</h2></div><div className="feature-grid">{features.map(([Icon,title,description])=><article key={title}><Icon/><h3>{title}</h3><p>{description}</p></article>)}</div></section>}

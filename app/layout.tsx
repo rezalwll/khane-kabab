@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './extra.css';
-import './states.css';
 import './bright-theme.css';
 import './polish.css';
 import { Header } from '@/components/layout/header';
