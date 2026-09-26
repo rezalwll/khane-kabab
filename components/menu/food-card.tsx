@@ -1,16 +1,20 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
 import { Heart, Plus, Star } from 'lucide-react';
-import { formatPrice } from '@/data/foods';
+import { formatPrice } from '@/lib/format-price';
 import { useCart } from '@/stores/cart-store';
+import { useFavorites } from '@/stores/favorites-store';
+import { useToastStore } from '@/stores/toast-store';
 import type { Food } from '@/types/food';
+
 export function FoodCard({food,compact=false}:{food:Food;compact?:boolean}){
-  const add=useCart(s=>s.addItem);const [added,setAdded]=useState(false);
-  const addFood=()=>{add(food);setAdded(true);window.setTimeout(()=>setAdded(false),1800)};
+  const addItem=useCart((state)=>state.addItem); const toggleFavorite=useFavorites((state)=>state.toggleFavorite);
+  const favorite=useFavorites((state)=>state.ids.includes(food.id)); const showToast=useToastStore((state)=>state.show);
+  const addFood=()=>{addItem(food);showToast(`${food.title} به سبد خرید اضافه شد`)};
+  const toggle=()=>{toggleFavorite(food.id);showToast(favorite?'از علاقه‌مندی‌ها حذف شد':'به علاقه‌مندی‌ها اضافه شد')};
   return <article className={`food-card ${compact?'compact-card':''} ${!food.available?'unavailable':''}`}>
-    <Link href={`/menu/${food.slug}`} className="food-image" style={{backgroundImage:`url(${food.image})`}}>{food.tags[0]&&<span>{food.tags[0]}</span>}<button className="favorite" aria-label={`علاقه‌مندی ${food.title}`} onClick={(e)=>e.preventDefault()}><Heart/></button>{!food.available&&<b>فعلاً ناموجود</b>}</Link>
-    <div className="food-info"><div className="rating"><Star/> {food.rating.toLocaleString('fa-IR')} <small>({food.reviewsCount.toLocaleString('fa-IR')})</small></div><Link href={`/menu/${food.slug}`}><h3>{food.title}</h3></Link><p>{food.shortDescription}</p><div><strong>{formatPrice(food.price)}</strong><button disabled={!food.available} onClick={addFood} aria-label={`افزودن ${food.title}`}><Plus/></button></div></div>
-    {added&&<output className="add-toast" aria-live="polite">به سبد خرید اضافه شد</output>}
-  </article>
+    <div className="food-media"><Link href={`/menu/${food.slug}`} className="food-image" aria-label={`مشاهده ${food.title}`}><Image src={food.image} alt={food.title} fill sizes="(max-width: 640px) 42vw, (max-width: 1000px) 45vw, 360px"/>{food.tags[0]&&<span>{food.tags[0]}</span>}{!food.available&&<b>فعلاً ناموجود</b>}</Link><button type="button" className={`favorite ${favorite?'active':''}`} aria-label={`${favorite?'حذف از':'افزودن به'} علاقه‌مندی‌ها: ${food.title}`} aria-pressed={favorite} onClick={toggle}><Heart/></button></div>
+    <div className="food-info"><div className="rating"><Star/> {food.rating.toLocaleString('fa-IR')} <small>({food.reviewsCount.toLocaleString('fa-IR')})</small></div><Link href={`/menu/${food.slug}`}><h3>{food.title}</h3></Link><p>{food.shortDescription}</p><div><strong>{formatPrice(food.price)}</strong><button type="button" disabled={!food.available} onClick={addFood} aria-label={`افزودن ${food.title} به سبد`}><Plus/></button></div></div>
+  </article>;
 }

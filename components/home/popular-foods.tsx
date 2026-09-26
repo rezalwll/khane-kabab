@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { FoodCard } from '@/components/menu/food-card';
+import { foods } from '@/data/foods';
+export function PopularFoods(){return <section className="section container"><div className="section-heading"><div><span>انتخاب‌های محبوب</span><h2>پرفروش‌ترین‌ها</h2><p>محبوب‌ترین انتخاب‌های مشتریان خانه کباب طهران</p></div><Link href="/menu">مشاهده همه <ArrowLeft/></Link></div><div className="food-grid">{foods.filter((food)=>food.featured).slice(0,6).map((food)=><FoodCard key={food.id} food={food}/>)}</div></section>}

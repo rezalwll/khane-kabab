@@ -1,4 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Heart, Home, ListOrdered, MenuSquare, UserRound } from 'lucide-react';
-export function MobileNav(){return <nav className="mobile-nav" aria-label="ناوبری موبایل"><Link href="/"><Home/><span>خانه</span></Link><Link href="/menu"><MenuSquare/><span>منو</span></Link><Link href="/order/success"><ListOrdered/><span>سفارش‌ها</span></Link><button><Heart/><span>علاقه‌مندی</span></button><button><UserRound/><span>حساب من</span></button></nav>}
+const links=[['/','خانه',Home],['/menu','منو',MenuSquare],['/orders','سفارش‌ها',ListOrdered],['/favorites','علاقه‌مندی‌ها',Heart],['/account','حساب من',UserRound]] as const;
+export function MobileNav(){const pathname=usePathname();return <nav className="mobile-nav" aria-label="ناوبری موبایل">{links.map(([href,label,Icon])=>{const active=href==='/'?pathname==='/':pathname.startsWith(href);return <Link key={href} href={href} className={active?'active':''} aria-current={active?'page':undefined}><Icon/><span>{label}</span></Link>})}</nav>}
