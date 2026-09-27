@@ -59,14 +59,18 @@ export type ApiOrderSummary = {
   };
   timestamps: Record<string, string | null>;
 };
-export const quoteOrder = (body: {
-  couponCode?: string;
-  fulfillmentType: 'delivery' | 'pickup';
-  items: ApiOrderLine[];
-}) =>
+export const quoteOrder = (
+  body: {
+    couponCode?: string;
+    fulfillmentType: 'delivery' | 'pickup';
+    items: ApiOrderLine[];
+  },
+  signal?: AbortSignal,
+) =>
   apiRequest<ApiQuote>('/api/v1/orders/quote', {
     method: 'POST',
     body: JSON.stringify(body),
+    signal,
   });
 export const createOrder = (body: CreateApiOrder) =>
   apiRequest<ApiOrderSummary>('/api/v1/orders', {

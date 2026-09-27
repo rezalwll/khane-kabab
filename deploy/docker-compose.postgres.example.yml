@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-khane_kabab}
+      POSTGRES_USER: ${POSTGRES_USER:-khane_kabab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [app]
+
+networks:
+  app:
+    name: khane-kabab-app
+
+volumes:
+  postgres_data:

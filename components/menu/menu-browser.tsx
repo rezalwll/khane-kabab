@@ -34,11 +34,8 @@ export function MenuBrowser() {
         setFoods(next);
         setCategories(['همه', ...data.categories.map((group) => group.name)]);
       })
-      .catch((error) => {
-        if (active)
-          setLoadError(
-            error instanceof Error ? error.message : 'خطا در دریافت منو',
-          );
+      .catch(() => {
+        if (active) setLoadError('ارتباط با سامانه سفارش برقرار نیست.');
       })
       .finally(() => {
         if (active) setLoading(false);

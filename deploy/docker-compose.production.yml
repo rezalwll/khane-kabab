@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: ../server
+    image: khane-kabab-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      - '127.0.0.1:${API_HOST_PORT:-4000}:4000'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:4000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [app]
+
+  notification-worker:
+    image: khane-kabab-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    profiles: [worker]
+    env_file: .env.production
+    command: ['node', 'dist/scripts/notifications-worker.js']
+    networks: [app]
+
+networks:
+  app:
+    name: khane-kabab-app
+    internal: false

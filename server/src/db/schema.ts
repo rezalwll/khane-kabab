@@ -484,6 +484,17 @@ export const notificationSettings = pgTable('notification_settings', {
   ...timestamps,
 });
 
+export const serviceHeartbeats = pgTable('service_heartbeats', {
+  serviceName: text('service_name').primaryKey(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  metadata: jsonb('metadata')
+    .$type<Record<string, unknown>>()
+    .default({})
+    .notNull(),
+});
+
 export const orderItems = pgTable(
   'order_items',
   {

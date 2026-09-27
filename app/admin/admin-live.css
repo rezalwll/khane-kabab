@@ -554,6 +554,7 @@
     display: none;
   }
 }
+.system-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}.system-grid .admin-panel{margin-top:0}.system-grid dl{display:grid;gap:10px}.system-grid dl div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #eee;padding-bottom:8px}.system-grid dd{margin:0;font-weight:700}@media(max-width:700px){.system-grid{grid-template-columns:1fr}}
 .integration-status {
   display: grid;
   grid-template-columns: 1fr 1fr;

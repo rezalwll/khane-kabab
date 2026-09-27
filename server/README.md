@@ -9,7 +9,7 @@ cp .env.example .env
 npm install
 docker compose up -d
 npm run db:migrate
-npm run db:seed
+npm run db:seed:initial
 npm run admin:bootstrap
 npm run dev
 ```
@@ -45,7 +45,7 @@ npm run admin:sessions:cleanup
 
 ## Endpointها
 
-عمومی: `GET /health`، `GET /api/v1/menu`، `GET /api/v1/products/:slug`، `POST /api/v1/coupons/validate`، `POST /api/v1/orders/quote`، `POST /api/v1/orders`، `GET /api/v1/orders/:publicNumber` با `X-Order-Token`، `POST /api/v1/payments/:publicNumber/start` و `GET /api/v1/restaurant`.
+عمومی: `GET /health`، `GET /ready`، `GET /api/v1/menu`، `GET /api/v1/products/:slug`، `POST /api/v1/coupons/validate`، `POST /api/v1/orders/quote`، `POST /api/v1/orders`، `GET /api/v1/orders/:publicNumber` با `X-Order-Token`، `POST /api/v1/payments/:publicNumber/start` و `GET /api/v1/restaurant`.
 
 مدیریت:
 
@@ -56,6 +56,7 @@ npm run admin:sessions:cleanup
 - settings: `GET/PATCH /api/v1/admin/settings` و `GET/PUT /api/v1/admin/opening-hours`
 - integrations: `GET/PATCH /api/v1/admin/integrations`
 - notifications: `GET /api/v1/admin/notifications` و `POST /:id/retry`
+- system: `GET /api/v1/admin/system` بدون نمایش secret
 
 همه پاسخ‌های authenticated ادمین `Cache-Control: no-store` دارند. عملیات ورود/خروج، رمز، سفارش، منو، تنظیمات و ساعات در `admin_audit_logs` ثبت می‌شوند؛ رمز، توکن خام و PII کامل در audit/log قرار نمی‌گیرند.
 
@@ -69,7 +70,9 @@ adapter هر دو provider به‌طور پیش‌فرض `disabled` است. تن
 npm run notifications:work
 ```
 
-rate limit عملیات quote، ثبت سفارش و شروع پرداخت process-local است. در اجرای چندنمونه‌ای باید با rate limiter توزیع‌شده جایگزین شود.
+rate limit عملیات quote، ثبت سفارش، شروع پرداخت و ورود ادمین process-local است. در اجرای چندنمونه‌ای distributed نیست و باید با rate limiter توزیع‌شده جایگزین شود.
+
+راهنمای production، backup/restore و checklistها در `deploy/README.md` است.
 
 ## Migration و QA
 

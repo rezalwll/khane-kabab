@@ -13,9 +13,9 @@ export default function AccountPage() {
     <main className="inner-page simple-page">
       <div className="container narrow-page">
         <div className="simple-heading">
-          <span>پروفایل نمایشی</span>
+          <span>سفارش مهمان</span>
           <h1>حساب من</h1>
-          <p>ورود و حساب واقعی در فاز بعد فعال می‌شود.</p>
+          <p>بدون ساخت حساب، سفارش‌های همین مرورگر را پیگیری کنید.</p>
         </div>
         <section className="account-card">
           <div className="account-person">
@@ -24,9 +24,9 @@ export default function AccountPage() {
             </i>
             <div>
               <strong>مهمان خانه کباب</strong>
-              <small>حساب نمایشی</small>
+              <small>سفارش مهمان</small>
             </div>
-            <span>دمو</span>
+            <span>فعال</span>
           </div>
           <nav aria-label="گزینه‌های حساب">
             <Link href="/orders">

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Clock3, PackageCheck } from 'lucide-react';
 import { getOrder, type ApiOrderSummary } from '@/lib/api/orders';
@@ -17,6 +17,20 @@ export function OrderTrackingContent({
   const hydrated = useGuestOrders((state) => state.hydrated);
   const [order, setOrder] = useState<ApiOrderSummary | null>(null);
   const [error, setError] = useState('');
+  const inFlight = useRef(false);
+  const load = useCallback(async () => {
+    if (!access || inFlight.current) return;
+    inFlight.current = true;
+    try {
+      const value = await getOrder(publicNumber, access.trackingToken);
+      setOrder(value);
+      setError('');
+    } catch {
+      setError('ارتباط با سامانه سفارش برقرار نیست.');
+    } finally {
+      inFlight.current = false;
+    }
+  }, [access, publicNumber]);
   useEffect(() => {
     if (!hydrated) return;
     if (!access) {
@@ -25,32 +39,39 @@ export function OrderTrackingContent({
       );
       return;
     }
-    let active = true;
-    const load = () =>
-      getOrder(publicNumber, access.trackingToken)
-        .then((value) => active && setOrder(value))
-        .catch(
-          (reason) =>
-            active &&
-            setError(
-              reason instanceof Error ? reason.message : 'پیگیری ممکن نشد.',
-            ),
-        );
-    void load();
-    const timer = setInterval(load, 12_000);
-    return () => {
-      active = false;
-      clearInterval(timer);
+    queueMicrotask(() => void load());
+    const timer = setInterval(() => {
+      if (
+        document.visibilityState === 'visible' &&
+        order?.status !== 'delivered' &&
+        order?.status !== 'cancelled'
+      )
+        void load();
+    }, 12_000);
+    const visible = () => {
+      if (document.visibilityState === 'visible') void load();
     };
-  }, [access, publicNumber, hydrated]);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, [access, hydrated, load, order?.status]);
   if (!hydrated) return <div className="success-card order-loading" />;
-  if (error)
+  if (error && !order)
     return (
       <div className="success-card">
         <PackageCheck />
         <h1>امکان پیگیری نیست</h1>
         <p>{error}</p>
-        <Link href="/orders" className="primary-button">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => void load()}
+        >
+          تلاش مجدد
+        </button>
+        <Link href="/orders" className="ghost-dark">
           سفارش‌های من
         </Link>
       </div>
@@ -64,6 +85,11 @@ export function OrderTrackingContent({
       <p>
         <Clock3 /> وضعیت سفارش هر ۱۲ ثانیه به‌روز می‌شود.
       </p>
+      {error && (
+        <p className="field-error">
+          ارتباط موقتاً قطع است؛ آخرین وضعیت نمایش داده می‌شود.
+        </p>
+      )}
       <div className="order-facts order-facts-grid">
         <div>
           <small>شماره سفارش</small>
@@ -90,6 +116,9 @@ export function OrderTrackingContent({
           </strong>
         </div>
       </div>
+      <button type="button" className="ghost-dark" onClick={() => void load()}>
+        تازه‌سازی
+      </button>
       <Link href="/orders" className="ghost-dark">
         همه سفارش‌ها
       </Link>

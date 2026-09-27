@@ -8,11 +8,14 @@ import { apiProductToFood } from '@/lib/menu-adapter';
 import type { Food } from '@/types/food';
 export function PopularFoods() {
   const [foods, setFoods] = useState<Food[]>([]);
+  const [error, setError] = useState(false);
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     let active = true;
     getMenu()
       .then((menu) => {
-        if (active)
+        if (active) {
+          setError(false);
           setFoods(
             menu.categories
               .flatMap((group) =>
@@ -23,12 +26,13 @@ export function PopularFoods() {
               .filter((food) => food.featured)
               .slice(0, 6),
           );
+        }
       })
-      .catch(() => {});
+      .catch(() => active && setError(true));
     return () => {
       active = false;
     };
-  }, []);
+  }, [reload]);
   return (
     <section className="section container">
       <div className="section-heading">
@@ -48,9 +52,24 @@ export function PopularFoods() {
           ))}
         </div>
       ) : (
-        <p className="api-inline-state">
-          پیشنهادها پس از دریافت منو نمایش داده می‌شوند.
-        </p>
+        <div className="api-inline-state">
+          <p>
+            {error
+              ? 'ارتباط با سامانه سفارش برقرار نیست.'
+              : 'در حال دریافت پیشنهادها…'}
+          </p>
+          {error && (
+            <button
+              type="button"
+              onClick={() => {
+                setError(false);
+                setReload((value) => value + 1);
+              }}
+            >
+              تلاش مجدد
+            </button>
+          )}
+        </div>
       )}
     </section>
   );

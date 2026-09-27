@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { loadEnv } from '../config/env.js';
 import { createDatabase } from './client.js';
 import {
@@ -19,6 +19,15 @@ const env = loadEnv();
 const { db, pool } = createDatabase(env);
 
 await db.transaction(async (tx) => {
+  const [existingProducts] = await tx
+    .select({ count: sql<number>`count(*)::int` })
+    .from(products);
+  const [existingCategories] = await tx.select({count:sql<number>`count(*)::int`}).from(categories);
+  const [existingSettings] = await tx.select({count:sql<number>`count(*)::int`}).from(restaurantSettings);
+  if (((existingProducts?.count??0)+(existingCategories?.count??0)+(existingSettings?.count??0)) > 0 && !env.ALLOW_SEED_OVERWRITE)
+    throw new Error(
+      'Initial seed refused: operational catalog data already exists. Set ALLOW_SEED_OVERWRITE=true only for an intentional reset/update.',
+    );
   const categoryIds = new Map<string, string>();
   for (const [index, [slug, name]] of categorySeeds.entries()) {
     const [row] = await tx

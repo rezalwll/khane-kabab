@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import type pino from 'pino';
 import { ApiError } from '../lib/errors.js';
 import type { AppVariables } from './request-id.js';
+import { reportUnexpectedError } from '../lib/report-error.js';
 export function errorHandler(logger: pino.Logger) {
   return (error: Error, c: Context<{ Variables: AppVariables }>) => {
     const requestId = c.get('requestId') || 'unknown';
@@ -10,10 +11,7 @@ export function errorHandler(logger: pino.Logger) {
         { error: { code: error.code, message: error.message, requestId } },
         error.status,
       );
-    logger.error(
-      { requestId, errorName: error.name, message: error.message },
-      'unhandled request error',
-    );
+    reportUnexpectedError(logger, error, { requestId, area: 'request' });
     return c.json(
       {
         error: {

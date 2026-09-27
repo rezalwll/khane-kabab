@@ -17,6 +17,7 @@ import {
 } from './security.js';
 import type { AdminVariables } from './types.js';
 import { isAccountUsable, nextLoginFailure } from './auth-policy.js';
+import { processRateLimit } from '../../middleware/rate-limit.js';
 
 const loginSchema = z.object({
   username: z.string().trim().min(1).max(64),
@@ -57,72 +58,78 @@ const safeProfile = (user: {
 
 export function adminAuthRoutes(db: AppDb, env: Env) {
   const app = new Hono<{ Variables: AppVariables & AdminVariables }>();
-  app.post('/login', async (c) => {
-    const parsed = loginSchema.safeParse(await c.req.json().catch(() => null));
-    if (!parsed.success) throw genericError();
-    const username = parsed.data.username.toLowerCase();
-    const [user] = await db
-      .select()
-      .from(adminUsers)
-      .where(eq(adminUsers.username, username))
-      .limit(1);
-    const valid = user
-      ? await verifyPassword(parsed.data.password, user.passwordHash)
-      : false;
-    const now = new Date();
-    if (!user || !isAccountUsable(user, now) || !valid) {
-      if (user && isAccountUsable(user, now)) {
-        const failure = nextLoginFailure(user.failedLoginCount, now);
-        await db
+  app.post(
+    '/login',
+    processRateLimit('admin-login', 10, 15 * 60_000),
+    async (c) => {
+      const parsed = loginSchema.safeParse(
+        await c.req.json().catch(() => null),
+      );
+      if (!parsed.success) throw genericError();
+      const username = parsed.data.username.toLowerCase();
+      const [user] = await db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.username, username))
+        .limit(1);
+      const valid = user
+        ? await verifyPassword(parsed.data.password, user.passwordHash)
+        : false;
+      const now = new Date();
+      if (!user || !isAccountUsable(user, now) || !valid) {
+        if (user && isAccountUsable(user, now)) {
+          const failure = nextLoginFailure(user.failedLoginCount, now);
+          await db
+            .update(adminUsers)
+            .set({
+              ...failure,
+              updatedAt: now,
+            })
+            .where(eq(adminUsers.id, user.id));
+        }
+        await writeAudit(db, {
+          adminUserId: user?.id,
+          action: 'ADMIN_LOGIN_FAILED',
+          entityType: 'admin_user',
+          entityId: user?.id,
+          requestId: c.get('requestId'),
+          metadata: { username },
+        });
+        throw genericError();
+      }
+      const rawToken = createSessionToken();
+      const expiresAt = new Date(
+        now.getTime() + env.ADMIN_SESSION_TTL_HOURS * 3_600_000,
+      );
+      await db.transaction(async (tx) => {
+        await tx
           .update(adminUsers)
           .set({
-            ...failure,
+            failedLoginCount: 0,
+            lockedUntil: null,
+            lastLoginAt: now,
             updatedAt: now,
           })
           .where(eq(adminUsers.id, user.id));
-      }
+        await tx.insert(adminSessions).values({
+          adminUserId: user.id,
+          tokenHash: hashSessionToken(rawToken),
+          expiresAt,
+          userAgent: c.req.header('user-agent')?.slice(0, 255),
+        });
+      });
+      setCookie(c, ADMIN_COOKIE, rawToken, cookieOptions(env));
       await writeAudit(db, {
-        adminUserId: user?.id,
-        action: 'ADMIN_LOGIN_FAILED',
-        entityType: 'admin_user',
-        entityId: user?.id,
-        requestId: c.get('requestId'),
-        metadata: { username },
-      });
-      throw genericError();
-    }
-    const rawToken = createSessionToken();
-    const expiresAt = new Date(
-      now.getTime() + env.ADMIN_SESSION_TTL_HOURS * 3_600_000,
-    );
-    await db.transaction(async (tx) => {
-      await tx
-        .update(adminUsers)
-        .set({
-          failedLoginCount: 0,
-          lockedUntil: null,
-          lastLoginAt: now,
-          updatedAt: now,
-        })
-        .where(eq(adminUsers.id, user.id));
-      await tx.insert(adminSessions).values({
         adminUserId: user.id,
-        tokenHash: hashSessionToken(rawToken),
-        expiresAt,
-        userAgent: c.req.header('user-agent')?.slice(0, 255),
+        action: 'ADMIN_LOGIN_SUCCEEDED',
+        entityType: 'admin_user',
+        entityId: user.id,
+        requestId: c.get('requestId'),
       });
-    });
-    setCookie(c, ADMIN_COOKIE, rawToken, cookieOptions(env));
-    await writeAudit(db, {
-      adminUserId: user.id,
-      action: 'ADMIN_LOGIN_SUCCEEDED',
-      entityType: 'admin_user',
-      entityId: user.id,
-      requestId: c.get('requestId'),
-    });
-    c.header('Cache-Control', 'no-store');
-    return c.json({ user: safeProfile(user) });
-  });
+      c.header('Cache-Control', 'no-store');
+      return c.json({ user: safeProfile(user) });
+    },
+  );
   app.use('/me', requireAdmin(db));
   app.get('/me', (c) => c.json({ user: safeProfile(c.get('admin')) }));
   app.use('/logout', requireAdmin(db));

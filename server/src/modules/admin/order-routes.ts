@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppDb } from '../../db/client.js';
 import type { Env } from '../../config/env.js';
+import type pino from 'pino';
 import {
   adminAuditLogs,
   orderItemOptions,
@@ -35,7 +36,7 @@ const statusInput = z.object({
   expectedStatus: z.enum(orderStatusEnum.enumValues).optional(),
 });
 
-export function adminOrderRoutes(db: AppDb, env: Env) {
+export function adminOrderRoutes(db: AppDb, env: Env, logger: pino.Logger) {
   const app = new Hono<{ Variables: AppVariables & AdminVariables }>();
   app.use('*', requirePermission('orders:read'));
   app.get('/', async (c) => {
@@ -212,6 +213,15 @@ export function adminOrderRoutes(db: AppDb, env: Env) {
         });
       return row;
     });
+    logger.info(
+      {
+        requestId: c.get('requestId'),
+        publicNumber: updated.publicNumber,
+        from: expectedStatus,
+        to: status,
+      },
+      'order status changed',
+    );
     return c.json({ order: updated });
   });
   return app;

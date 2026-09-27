@@ -34,11 +34,7 @@ export function ProductPageContent({ slug }: { slug: string }) {
             .slice(0, 3),
         );
       })
-      .catch(
-        (reason) =>
-          active &&
-          setError(reason instanceof Error ? reason.message : 'غذا پیدا نشد.'),
-      );
+      .catch(() => active && setError('ارتباط با سامانه سفارش برقرار نیست.'));
     return () => {
       active = false;
     };

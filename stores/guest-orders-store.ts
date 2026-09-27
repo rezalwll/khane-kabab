@@ -14,6 +14,8 @@ type GuestOrdersState = {
   hydrated: boolean;
   orders: GuestOrderAccess[];
   addOrder: (order: GuestOrderAccess) => void;
+  removeOrder: (publicNumber: string) => void;
+  getToken: (publicNumber: string) => string | undefined;
   markHydrated: () => void;
 };
 const safeStorage: StateStorage = {
@@ -37,7 +39,7 @@ const safeStorage: StateStorage = {
 };
 export const useGuestOrders = create<GuestOrdersState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       hydrated: false,
       orders: [],
       markHydrated: () => set({ hydrated: true }),
@@ -48,8 +50,23 @@ export const useGuestOrders = create<GuestOrdersState>()(
             ...state.orders.filter(
               (item) => item.publicNumber !== order.publicNumber,
             ),
-          ].slice(0, 20),
+          ]
+            .filter(
+              (item) =>
+                Date.now() - new Date(item.createdAt).getTime() <
+                90 * 24 * 60 * 60 * 1000,
+            )
+            .slice(0, 20),
         })),
+      removeOrder: (publicNumber) =>
+        set((state) => ({
+          orders: state.orders.filter(
+            (item) => item.publicNumber !== publicNumber,
+          ),
+        })),
+      getToken: (publicNumber) =>
+        get().orders.find((item) => item.publicNumber === publicNumber)
+          ?.trackingToken,
     }),
     {
       name: 'khane-kabab-guest-orders',

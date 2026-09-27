@@ -93,12 +93,16 @@ export default function OrdersPage() {
   const [message, setMessage] = useState('');
   const knownSubmitted = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
+  const inFlight = useRef(false);
+  const pollingFailures = useRef(0);
   const [muted, setMuted] = useState(
     () =>
       typeof window !== 'undefined' &&
       localStorage.getItem('kk-admin-order-alert-muted') === '1',
   );
   const load = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setLoading(true);
     setMessage('');
     try {
@@ -117,36 +121,43 @@ export default function OrdersPage() {
           order.status === 'submitted' && !knownSubmitted.current.has(order.id),
       );
       setRows(r.orders);
-      knownSubmitted.current = new Set(
-        r.orders
-          .filter((order) => order.status === 'submitted')
-          .map((order) => order.id),
-      );
+      for(const order of r.orders)if(order.status==='submitted')knownSubmitted.current.add(order.id);
       if (initialized.current && fresh.length) {
         setMessage(`${fresh.length.toLocaleString('fa-IR')} سفارش جدید رسید.`);
         if (!muted) {
-          const context = new AudioContext();
-          const oscillator = context.createOscillator();
-          oscillator.connect(context.destination);
-          oscillator.frequency.value = 720;
-          oscillator.start();
-          oscillator.stop(context.currentTime + 0.12);
+          try {
+            const context = new AudioContext();
+            const oscillator = context.createOscillator();
+            oscillator.connect(context.destination);
+            oscillator.frequency.value = 720;
+            oscillator.start();
+            oscillator.stop(context.currentTime + 0.12);
+            oscillator.addEventListener('ended',()=>void context.close(),{once:true});
+          } catch {}
         }
       }
       initialized.current = true;
       setPages(Math.max(1, r.pagination.totalPages));
+      pollingFailures.current = 0;
     } catch {
+      pollingFailures.current++;
       setMessage('دریافت سفارش‌ها ناموفق بود.');
     } finally {
       setLoading(false);
+      inFlight.current = false;
     }
   }, [page, status, q, fulfillment, muted]);
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
   useEffect(() => {
-    const timer = setInterval(() => void load(), 12_000);
-    return () => clearInterval(timer);
+    let timer:ReturnType<typeof setTimeout>;
+    let cancelled=false;
+    const schedule=()=>{timer=setTimeout(async()=>{if(!cancelled&&document.visibilityState==='visible')await load();if(!cancelled)schedule()},Math.min(60_000,12_000*2**Math.min(pollingFailures.current,3)))};
+    schedule();
+    const visible=()=>{if(document.visibilityState==='visible')void load()};
+    document.addEventListener('visibilitychange',visible);
+    return () => {cancelled=true;clearTimeout(timer);document.removeEventListener('visibilitychange',visible)};
   }, [load]);
   async function open(id: string) {
     setBusy(true);

@@ -10,6 +10,7 @@ import { statusLabels } from './order-labels';
 export function SuccessContent() {
   const [order, setOrder] = useState<ApiOrderSummary | null>(null);
   const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
   const orders = useGuestOrders((state) => state.orders);
   const hydrated = useGuestOrders((state) => state.hydrated);
   useEffect(() => {
@@ -26,12 +27,8 @@ export function SuccessContent() {
     }
     getOrder(access.publicNumber, access.trackingToken)
       .then(setOrder)
-      .catch((reason) =>
-        setError(
-          reason instanceof Error ? reason.message : 'سفارش دریافت نشد.',
-        ),
-      );
-  }, [orders, hydrated]);
+      .catch(() => setError('ارتباط با سامانه سفارش برقرار نیست.'));
+  }, [orders, hydrated, reload]);
   if (!hydrated)
     return (
       <div
@@ -45,7 +42,17 @@ export function SuccessContent() {
         <PackageCheck className="empty-order-icon" />
         <h1>سفارش قابل نمایش نیست</h1>
         <p>{error}</p>
-        <Link href="/orders" className="primary-button">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => {
+            setError('');
+            setReload((value) => value + 1);
+          }}
+        >
+          تلاش مجدد
+        </button>
+        <Link href="/orders" className="ghost-dark">
           سفارش‌های من
         </Link>
       </div>

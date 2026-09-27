@@ -15,11 +15,14 @@
     "test": "vitest run --config vitest.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/db/seed.ts",
+    "db:seed:initial": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "admin:bootstrap": "tsx src/scripts/admin-bootstrap.ts",
     "admin:sessions:cleanup": "tsx src/scripts/admin-sessions-cleanup.ts",
-    "notifications:work": "tsx src/scripts/notifications-work.ts"
+    "notifications:work": "tsx src/scripts/notifications-work.ts",
+    "notifications:worker": "tsx src/scripts/notifications-worker.ts",
+    "notifications:cleanup": "tsx src/scripts/notifications-cleanup.ts",
+    "smoke:production": "tsx src/scripts/smoke-production.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",

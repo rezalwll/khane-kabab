@@ -68,11 +68,24 @@ export async function startPayment(
       status: 'created',
     })
     .returning();
-  const result = await provider.createPayment({
-    publicNumber,
-    amountToman: order.totalToman,
-    callbackUrl: `${env.PAYMENT_CALLBACK_BASE_URL}/api/v1/payments/callback/${provider.name}`,
-  });
+  let result;
+  try {
+    result = await provider.createPayment({
+      publicNumber,
+      amountToman: order.totalToman,
+      callbackUrl: `${env.PAYMENT_CALLBACK_BASE_URL}/api/v1/payments/callback/${provider.name}`,
+    });
+  } catch (error) {
+    await db
+      .update(paymentAttempts)
+      .set({
+        status: 'failed',
+        failureCode: error instanceof Error ? error.name : 'PROVIDER_ERROR',
+        updatedAt: new Date(),
+      })
+      .where(eq(paymentAttempts.id, attempt!.id));
+    throw error;
+  }
   await db
     .update(paymentAttempts)
     .set({

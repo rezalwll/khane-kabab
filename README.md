@@ -40,7 +40,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - `/checkout` تسویه چهارمرحله‌ای، quote نهایی سرور و ثبت واقعی سفارش
 - `/order/success` نتیجه سفارش واقعی
 - `/orders` و `/orders/[publicNumber]` فهرست و پیگیری زنده سفارش‌های مهمان
-- `/account` حساب کاربری نمایشی
+- `/account` راهنمای سفارش مهمان (حساب مشتری هنوز وجود ندارد)
 - `/admin/login` ورود امن مدیر
 - `/admin` داشبورد زنده مدیریت
 - `/admin/orders` سفارش‌ها و تغییر وضعیت

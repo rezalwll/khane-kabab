@@ -100,4 +100,5 @@ export const adminApi = {
     ),
   retryNotification: (id: string) =>
     request<{ ok: true }>(`/notifications/${id}/retry`, { method: 'POST' }),
+  system: <T = unknown>() => request<T>('/system'),
 };

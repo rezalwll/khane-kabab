@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
+import { bodyLimit } from 'hono/body-limit';
 import type pino from 'pino';
 import type { AppDb } from './db/client.js';
 import type { Env } from './config/env.js';
 import { couponRoutes } from './modules/coupons/routes.js';
-import { healthRoutes } from './modules/health/routes.js';
+import { healthRoutes, readinessRoutes } from './modules/health/routes.js';
 import { menuRoutes } from './modules/menu/routes.js';
 import { orderRoutes } from './modules/orders/routes.js';
 import { productRoutes } from './modules/products/routes.js';
@@ -16,6 +17,7 @@ import { adminDashboardRoutes } from './modules/admin/dashboard-routes.js';
 import { adminOrderRoutes } from './modules/admin/order-routes.js';
 import { adminIntegrationRoutes } from './modules/admin/integration-routes.js';
 import { adminNotificationRoutes } from './modules/admin/notification-routes.js';
+import { adminSystemRoutes } from './modules/admin/system-routes.js';
 import { paymentRoutes } from './modules/payments/routes.js';
 import {
   adminOpeningHoursRoutes,
@@ -42,6 +44,23 @@ export function createApp({
   app.use('*', requestIdMiddleware);
   app.use('*', loggerMiddleware(logger));
   app.use('/api/*', secureHeaders());
+  app.use('/api/*', async (c, next) => {
+    if (!['POST', 'PUT', 'PATCH'].includes(c.req.method)) return next();
+    return bodyLimit({
+      maxSize: 256 * 1024,
+      onError: (context) =>
+        context.json(
+          {
+            error: {
+              code: 'BODY_TOO_LARGE',
+              message: 'حجم درخواست بیش از حد مجاز است.',
+              requestId: context.get('requestId'),
+            },
+          },
+          413,
+        ),
+    })(c, next);
+  });
   app.use(
     '/api/v1/admin/*',
     cors({
@@ -67,6 +86,7 @@ export function createApp({
     })(c, next);
   });
   app.route('/health', healthRoutes);
+  app.route('/ready', readinessRoutes(db, env, logger));
   app.use('/api/v1/menu', async (c, next) => {
     await next();
     c.header('Cache-Control', 'no-store');
@@ -82,18 +102,20 @@ export function createApp({
   app.route('/api/v1/menu', menuRoutes(db));
   app.route('/api/v1/products', productRoutes(db));
   app.route('/api/v1/coupons', couponRoutes(db));
-  app.route('/api/v1/orders', orderRoutes(db, env));
-  app.route('/api/v1/payments', paymentRoutes(db, env));
+  app.route('/api/v1/orders', orderRoutes(db, env, logger));
+  app.route('/api/v1/payments', paymentRoutes(db, env, logger));
   app.route('/api/v1/restaurant', restaurantRoutes(db, env));
   app.route('/api/v1/admin/auth', adminAuthRoutes(db, env));
   app.use('/api/v1/admin/dashboard/*', requireAdmin(db));
   app.route('/api/v1/admin/dashboard', adminDashboardRoutes(db));
   app.use('/api/v1/admin/orders/*', requireAdmin(db));
-  app.route('/api/v1/admin/orders', adminOrderRoutes(db, env));
+  app.route('/api/v1/admin/orders', adminOrderRoutes(db, env, logger));
   app.use('/api/v1/admin/integrations/*', requireAdmin(db));
   app.route('/api/v1/admin/integrations', adminIntegrationRoutes(db, env));
   app.use('/api/v1/admin/notifications/*', requireAdmin(db));
   app.route('/api/v1/admin/notifications', adminNotificationRoutes(db));
+  app.use('/api/v1/admin/system/*', requireAdmin(db));
+  app.route('/api/v1/admin/system', adminSystemRoutes(db, env));
   app.use('/api/v1/admin/menu', requireAdmin(db));
   app.use('/api/v1/admin/categories/*', requireAdmin(db));
   app.use('/api/v1/admin/products/*', requireAdmin(db));

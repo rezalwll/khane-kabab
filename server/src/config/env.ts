@@ -31,6 +31,17 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((value) => value === 'true'),
+  APP_VERSION: z.string().default('development'),
+  GIT_SHA: z.string().default('unknown'),
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
+  DB_IDLE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30_000),
+  DB_CONNECTION_TIMEOUT_MS: z.coerce.number().int().min(1000).default(5_000),
+  DATABASE_SSL_MODE: z.enum(['disable', 'require']).default('disable'),
+  ALLOW_SEED_OVERWRITE: z
+    .string()
+    .default('false')
+    .transform((value) => value === 'true'),
+  NOTIFICATION_RETENTION_DAYS: z.coerce.number().int().min(1).default(90),
 });
 
 export type Env = z.infer<typeof envSchema> & {
@@ -48,5 +59,19 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     .filter(Boolean);
   if (corsOrigins.includes('*') || adminOrigins.includes('*'))
     throw new Error('CORS origins cannot contain *');
+  if (parsed.NODE_ENV === 'production') {
+    if (!parsed.ADMIN_COOKIE_SECURE)
+      throw new Error('ADMIN_COOKIE_SECURE must be true in production');
+    if (!corsOrigins.length || !adminOrigins.length)
+      throw new Error('Production CORS origins must be explicit');
+    for (const origin of [...corsOrigins, ...adminOrigins])
+      if (!origin.startsWith('https://'))
+        throw new Error('Production origins must use HTTPS');
+    if (
+      parsed.PAYMENT_PROVIDER_CONFIGURED &&
+      !parsed.PAYMENT_CALLBACK_BASE_URL.startsWith('https://')
+    )
+      throw new Error('Configured payment requires an HTTPS callback URL');
+  }
   return { ...parsed, corsOrigins, adminOrigins };
 }

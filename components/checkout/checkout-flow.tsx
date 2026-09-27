@@ -24,6 +24,7 @@ import { getRestaurant, type ApiRestaurant } from '@/lib/api/restaurant';
 import { useCart } from '@/stores/cart-store';
 import { useOrderStore } from '@/stores/order-store';
 import { useGuestOrders } from '@/stores/guest-orders-store';
+import { ApiClientError } from '@/lib/api/client';
 import type { DeliveryMethod, PaymentMethod } from '@/types/order';
 
 const steps = ['نحوه دریافت', 'اطلاعات', 'زمان', 'پرداخت'];
@@ -38,6 +39,7 @@ export function CheckoutFlow() {
   const [step, setStep] = useState(0);
   const [restaurant, setRestaurant] = useState<ApiRestaurant | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [settingsReload, setSettingsReload] = useState(0);
   const [deliveryMethod, setDeliveryMethod] =
     useState<DeliveryMethod>('delivery');
   const [customerName, setCustomerName] = useState('');
@@ -71,49 +73,44 @@ export function CheckoutFlow() {
           setDeliveryMethod('pickup');
       })
       .catch(
-        (reason) =>
-          active &&
-          setSubmitError(
-            reason instanceof Error
-              ? reason.message
-              : 'تنظیمات رستوران دریافت نشد.',
-          ),
+        () => active && setSubmitError('ارتباط با سامانه سفارش برقرار نیست.'),
       )
       .finally(() => active && setLoadingSettings(false));
     return () => {
       active = false;
     };
-  }, []);
+  }, [settingsReload]);
   useEffect(() => {
     if (!apiItems.length) return;
     let active = true;
+    const controller = new AbortController();
     const timer = setTimeout(
       () =>
-        quoteOrder({
-          items: apiItems,
-          fulfillmentType: deliveryMethod,
-          ...(couponCode ? { couponCode } : {}),
-        })
+        quoteOrder(
+          {
+            items: apiItems,
+            fulfillmentType: deliveryMethod,
+            ...(couponCode ? { couponCode } : {}),
+          },
+          controller.signal,
+        )
           .then((value) => {
             if (active) {
               setQuote(value);
               setQuoteError('');
             }
           })
-          .catch((reason) => {
+          .catch(() => {
             if (active) {
               setQuote(null);
-              setQuoteError(
-                reason instanceof Error
-                  ? reason.message
-                  : 'قیمت نهایی دریافت نشد.',
-              );
+              setQuoteError('ارتباط با سامانه سفارش برقرار نیست.');
             }
           }),
       250,
     );
     return () => {
       active = false;
+      controller.abort();
       clearTimeout(timer);
     };
   }, [apiItems, deliveryMethod, couponCode]);
@@ -195,11 +192,7 @@ export function CheckoutFlow() {
         `/order/success?order=${encodeURIComponent(order.publicNumber)}`,
       );
     } catch (reason) {
-      setSubmitError(
-        reason instanceof Error
-          ? reason.message
-          : 'ثبت سفارش ناموفق بود. دوباره تلاش کنید.',
-      );
+      setSubmitError(reason instanceof ApiClientError&&['NETWORK_ERROR','TIMEOUT'].includes(reason.code)?'ارتباط با سامانه سفارش برقرار نیست.':reason instanceof Error?reason.message:'ثبت سفارش ناموفق بود. دوباره تلاش کنید.');
     } finally {
       setSubmitting(false);
     }
@@ -221,7 +214,24 @@ export function CheckoutFlow() {
         <h2>در حال آماده‌سازی ثبت سفارش…</h2>
       </div>
     );
-  if (!restaurant || !restaurant.ordersEnabled)
+  if (!restaurant)
+    return (
+      <div className="empty-cart checkout-empty">
+        <h2>ارتباط با سامانه سفارش برقرار نیست.</h2>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => {
+            setLoadingSettings(true);
+            setSubmitError('');
+            setSettingsReload((value) => value + 1);
+          }}
+        >
+          تلاش مجدد
+        </button>
+      </div>
+    );
+  if (!restaurant.ordersEnabled)
     return (
       <div className="empty-cart checkout-empty">
         <h2>ثبت سفارش فعلاً متوقف است</h2>
@@ -366,18 +376,6 @@ export function CheckoutFlow() {
                     <strong>سریع‌ترین زمان ممکن</strong>
                   </span>
                 </button>
-                <label>
-                  <span>یا ساعت موردنظر</span>
-                  <select
-                    value={deliveryTime}
-                    onChange={(event) => setDeliveryTime(event.target.value)}
-                  >
-                    <option value="asap">سریع‌ترین زمان</option>
-                    <option value="13:30">۱۳:۳۰</option>
-                    <option value="14:00">۱۴:۰۰</option>
-                    <option value="14:30">۱۴:۳۰</option>
-                  </select>
-                </label>
               </div>
             </>
           )}

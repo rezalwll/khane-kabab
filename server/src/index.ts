@@ -10,10 +10,21 @@ const app = createApp({ db, env, logger });
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) =>
   logger.info({ port: info.port }, 'API server started'),
 );
-const shutdown = async () => {
-  logger.info('Shutting down API server');
-  server.close();
+let shuttingDown = false;
+const shutdown = async (signal: string) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, 'Shutting down API server');
+  const forced = setTimeout(() => {
+    logger.error('Graceful shutdown timed out');
+    process.exit(1);
+  }, 10_000);
+  forced.unref();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
   await pool.end();
+  clearTimeout(forced);
+  logger.info('API server stopped');
+  process.exit(0);
 };
-process.once('SIGINT', shutdown);
-process.once('SIGTERM', shutdown);
+process.once('SIGINT', () => void shutdown('SIGINT'));
+process.once('SIGTERM', () => void shutdown('SIGTERM'));

@@ -12,6 +12,8 @@ export function OrdersContent() {
   const hydrated = useGuestOrders((state) => state.hydrated);
   const [orders, setOrders] = useState<ApiOrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     if (!hydrated) return;
     let active = true;
@@ -19,18 +21,20 @@ export function OrdersContent() {
       access.map((item) => getOrder(item.publicNumber, item.trackingToken)),
     )
       .then((results) => {
-        if (active)
+        if (active) {
+          setError(results.some((result) => result.status === 'rejected'));
           setOrders(
             results.flatMap((result) =>
               result.status === 'fulfilled' ? [result.value] : [],
             ),
           );
+        }
       })
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
-  }, [access, hydrated]);
+  }, [access, hydrated, reload]);
   if (loading)
     return (
       <div
@@ -42,11 +46,30 @@ export function OrdersContent() {
     return (
       <div className="empty-cart page-empty">
         <PackageCheck />
-        <h2>هنوز سفارشی ثبت نکرده‌اید</h2>
-        <p>سفارش‌های واقعی این مرورگر اینجا نمایش داده می‌شوند.</p>
-        <Link href="/menu" className="primary-button">
-          مشاهده منو
-        </Link>
+        <h2>
+          {error
+            ? 'ارتباط با سامانه سفارش برقرار نیست.'
+            : 'هنوز سفارشی ثبت نکرده‌اید'}
+        </h2>
+        {error ? (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setLoading(true);
+              setReload((value) => value + 1);
+            }}
+          >
+            تلاش مجدد
+          </button>
+        ) : (
+          <>
+            <p>سفارش‌های واقعی این مرورگر اینجا نمایش داده می‌شوند.</p>
+            <Link href="/menu" className="primary-button">
+              مشاهده منو
+            </Link>
+          </>
+        )}
       </div>
     );
   return (

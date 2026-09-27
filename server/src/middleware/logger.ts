@@ -11,7 +11,7 @@ export const loggerMiddleware = (logger: pino.Logger) =>
         method: c.req.method,
         path: c.req.path,
         status: c.res.status,
-        latencyMs: Math.round((performance.now() - started) * 100) / 100,
+        durationMs: Math.round((performance.now() - started) * 100) / 100,
       },
       'request completed',
     );

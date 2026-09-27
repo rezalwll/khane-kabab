@@ -1,11 +1,22 @@
 import { eq, sql } from 'drizzle-orm';
 import type { AppDb } from '../../db/client.js';
 import type { Env } from '../../config/env.js';
-import { notificationOutbox } from '../../db/schema.js';
+import { notificationOutbox, serviceHeartbeats } from '../../db/schema.js';
 import { getSmsProvider } from './service.js';
 import { renderSmsTemplate, type TemplateKey } from './templates.js';
 const MAX_ATTEMPTS = 5;
 export async function workNotifications(db: AppDb, env: Env, batchSize = 20) {
+  await db
+    .insert(serviceHeartbeats)
+    .values({
+      serviceName: 'notification-worker',
+      lastSeenAt: new Date(),
+      metadata: { mode: env.SMS_PROVIDER },
+    })
+    .onConflictDoUpdate({
+      target: serviceHeartbeats.serviceName,
+      set: { lastSeenAt: new Date(), metadata: { mode: env.SMS_PROVIDER } },
+    });
   const provider = getSmsProvider(env);
   if (!provider.isConfigured())
     return { claimed: 0, sent: 0, failed: 0, disabled: true };

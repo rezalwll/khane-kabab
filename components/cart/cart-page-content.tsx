@@ -43,10 +43,8 @@ export function CartPageContent() {
       } else {
         setError(result.reason ?? 'کد تخفیف معتبر نیست');
       }
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : 'اعتبارسنجی کد انجام نشد.',
-      );
+    } catch {
+      setError('ارتباط با سامانه سفارش برقرار نیست.');
     } finally {
       setApplying(false);
     }
