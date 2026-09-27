@@ -85,4 +85,19 @@ export const adminApi = {
   openingHours: <T = unknown>() => request<T>('/opening-hours'),
   updateOpeningHours: <T = unknown>(openingHours: unknown[]) =>
     request<T>('/opening-hours', json('PUT', { openingHours })),
+  integrations: <T = unknown>() => request<T>('/integrations'),
+  updateIntegrations: <T = unknown>(value: unknown) =>
+    request<T>('/integrations', json('PATCH', value)),
+  notifications: <T = unknown>(
+    params: Record<string, string | number | undefined>,
+  ) =>
+    request<T>(
+      `/notifications?${new URLSearchParams(
+        Object.entries(params)
+          .filter(([, value]) => value !== undefined)
+          .map(([key, value]) => [key, String(value)]),
+      ).toString()}`,
+    ),
+  retryNotification: (id: string) =>
+    request<{ ok: true }>(`/notifications/${id}/retry`, { method: 'POST' }),
 };

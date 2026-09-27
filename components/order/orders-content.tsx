@@ -1,7 +1,97 @@
 'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Clock3, PackageCheck } from 'lucide-react';
 import { formatPrice } from '@/lib/format-price';
-import { useOrderStore } from '@/stores/order-store';
-import { deliveryLabels, statusLabels } from './order-labels';
-export function OrdersContent(){const {lastOrder,hydrated}=useOrderStore();if(!hydrated)return <div className="mock-order order-loading" aria-label="در حال بارگذاری سفارش"/>;if(!lastOrder)return <div className="empty-cart page-empty"><PackageCheck/><h2>هنوز سفارشی ثبت نکرده‌اید</h2><p>پس از ثبت سفارش نمایشی، اطلاعات آن اینجا می‌ماند.</p><Link href="/menu" className="primary-button">مشاهده منو</Link></div>;const created=new Intl.DateTimeFormat('fa-IR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(lastOrder.createdAt));const itemCount=lastOrder.items.reduce((sum,item)=>sum+item.quantity,0);return <section><h2 className="last-order-title">آخرین سفارش</h2><article className="mock-order"><header><div><small>شماره سفارش</small><strong dir="ltr">{lastOrder.id}</strong></div><span><Clock3/>{statusLabels[lastOrder.status]}</span></header><div className="order-snapshot-body"><PackageCheck/><div><strong>{itemCount.toLocaleString('fa-IR')} قلم · {deliveryLabels[lastOrder.deliveryMethod]}</strong><small>{created}</small><ul>{lastOrder.items.map((item)=><li key={`${item.title}-${item.quantity}`}>{item.title} × {item.quantity.toLocaleString('fa-IR')}</li>)}</ul></div><b>{formatPrice(lastOrder.total)}</b></div><footer><small>این سفارش فقط در مرورگر شما ذخیره شده و برای رستوران ارسال نشده است.</small><Link href="/menu">مشاهده منو</Link></footer></article></section>}
+import { getOrder, type ApiOrderSummary } from '@/lib/api/orders';
+import { useGuestOrders } from '@/stores/guest-orders-store';
+import { statusLabels } from './order-labels';
+
+export function OrdersContent() {
+  const access = useGuestOrders((state) => state.orders);
+  const hydrated = useGuestOrders((state) => state.hydrated);
+  const [orders, setOrders] = useState<ApiOrderSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (!hydrated) return;
+    let active = true;
+    void Promise.allSettled(
+      access.map((item) => getOrder(item.publicNumber, item.trackingToken)),
+    )
+      .then((results) => {
+        if (active)
+          setOrders(
+            results.flatMap((result) =>
+              result.status === 'fulfilled' ? [result.value] : [],
+            ),
+          );
+      })
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [access, hydrated]);
+  if (loading)
+    return (
+      <div
+        className="mock-order order-loading"
+        aria-label="در حال بارگذاری سفارش"
+      />
+    );
+  if (!orders.length)
+    return (
+      <div className="empty-cart page-empty">
+        <PackageCheck />
+        <h2>هنوز سفارشی ثبت نکرده‌اید</h2>
+        <p>سفارش‌های واقعی این مرورگر اینجا نمایش داده می‌شوند.</p>
+        <Link href="/menu" className="primary-button">
+          مشاهده منو
+        </Link>
+      </div>
+    );
+  return (
+    <section>
+      <h2 className="last-order-title">سفارش‌های من</h2>
+      {orders.map((order) => {
+        const created = new Intl.DateTimeFormat('fa-IR', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(order.createdAt));
+        const count = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        return (
+          <article className="mock-order" key={order.publicNumber}>
+            <header>
+              <div>
+                <small>شماره سفارش</small>
+                <strong dir="ltr">{order.publicNumber}</strong>
+              </div>
+              <span>
+                <Clock3 />
+                {statusLabels[order.status]}
+              </span>
+            </header>
+            <div className="order-snapshot-body">
+              <PackageCheck />
+              <div>
+                <strong>{count.toLocaleString('fa-IR')} قلم</strong>
+                <small>{created}</small>
+                <ul>
+                  {order.items.map((item) => (
+                    <li key={`${item.title}-${item.quantity}`}>
+                      {item.title} × {item.quantity.toLocaleString('fa-IR')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <b>{formatPrice(order.pricing.totalToman)}</b>
+            </div>
+            <footer>
+              <small>اطلاعات زنده از سرور</small>
+              <Link href={`/orders/${order.publicNumber}`}>پیگیری سفارش</Link>
+            </footer>
+          </article>
+        );
+      })}
+    </section>
+  );
+}

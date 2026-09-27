@@ -1,6 +1,13 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Bell,
+  BellOff,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import { adminApi, type OrderStatus } from '@/lib/api/admin';
 import { formatPrice } from '@/lib/format-price';
 type Row = {
@@ -84,6 +91,13 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const knownSubmitted = useRef<Set<string>>(new Set());
+  const initialized = useRef(false);
+  const [muted, setMuted] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      localStorage.getItem('kk-admin-order-alert-muted') === '1',
+  );
   const load = useCallback(async () => {
     setLoading(true);
     setMessage('');
@@ -98,16 +112,41 @@ export default function OrdersPage() {
         q: q || undefined,
         fulfillmentType: fulfillment || undefined,
       });
+      const fresh = r.orders.filter(
+        (order) =>
+          order.status === 'submitted' && !knownSubmitted.current.has(order.id),
+      );
       setRows(r.orders);
+      knownSubmitted.current = new Set(
+        r.orders
+          .filter((order) => order.status === 'submitted')
+          .map((order) => order.id),
+      );
+      if (initialized.current && fresh.length) {
+        setMessage(`${fresh.length.toLocaleString('fa-IR')} سفارش جدید رسید.`);
+        if (!muted) {
+          const context = new AudioContext();
+          const oscillator = context.createOscillator();
+          oscillator.connect(context.destination);
+          oscillator.frequency.value = 720;
+          oscillator.start();
+          oscillator.stop(context.currentTime + 0.12);
+        }
+      }
+      initialized.current = true;
       setPages(Math.max(1, r.pagination.totalPages));
     } catch {
       setMessage('دریافت سفارش‌ها ناموفق بود.');
     } finally {
       setLoading(false);
     }
-  }, [page, status, q, fulfillment]);
+  }, [page, status, q, fulfillment, muted]);
   useEffect(() => {
     queueMicrotask(() => void load());
+  }, [load]);
+  useEffect(() => {
+    const timer = setInterval(() => void load(), 12_000);
+    return () => clearInterval(timer);
   }, [load]);
   async function open(id: string) {
     setBusy(true);
@@ -162,6 +201,21 @@ export default function OrdersPage() {
         <button onClick={() => void load()}>
           <RefreshCw />
           تازه‌سازی
+        </button>
+        <button
+          onClick={() =>
+            setMuted((value) => {
+              const next = !value;
+              localStorage.setItem(
+                'kk-admin-order-alert-muted',
+                next ? '1' : '0',
+              );
+              return next;
+            })
+          }
+        >
+          {muted ? <BellOff /> : <Bell />}
+          {muted ? 'صدا خاموش' : 'صدا روشن'}
         </button>
       </div>
       <div className="admin-tabs">

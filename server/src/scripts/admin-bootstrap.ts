@@ -31,14 +31,12 @@ try {
     throw new Error(
       'Admin username already exists; bootstrap never overwrites users',
     );
-  await db
-    .insert(adminUsers)
-    .values({
-      username,
-      displayName,
-      passwordHash: await hashPassword(password),
-      role: 'owner',
-    });
+  await db.insert(adminUsers).values({
+    username,
+    displayName,
+    passwordHash: await hashPassword(password),
+    role: 'owner',
+  });
   console.log(
     JSON.stringify({ level: 'info', message: 'Owner admin created', username }),
   );

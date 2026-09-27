@@ -2,6 +2,7 @@ import { and, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { AppDb } from '../../db/client.js';
+import type { Env } from '../../config/env.js';
 import {
   adminAuditLogs,
   orderItemOptions,
@@ -17,6 +18,7 @@ import {
 } from '../orders/status-transitions.js';
 import { requirePermission } from './middleware.js';
 import type { AdminVariables } from './types.js';
+import { enqueueNotificationIfEnabled } from '../notifications/service.js';
 
 const filters = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -33,7 +35,7 @@ const statusInput = z.object({
   expectedStatus: z.enum(orderStatusEnum.enumValues).optional(),
 });
 
-export function adminOrderRoutes(db: AppDb) {
+export function adminOrderRoutes(db: AppDb, env: Env) {
   const app = new Hono<{ Variables: AppVariables & AdminVariables }>();
   app.use('*', requirePermission('orders:read'));
   app.get('/', async (c) => {
@@ -124,6 +126,9 @@ export function adminOrderRoutes(db: AppDb) {
     const { status } = parsed.data;
     const [currentOrder] = await db
       .select({
+        id: orders.id,
+        publicNumber: orders.publicNumber,
+        mobile: orders.mobile,
         fulfillmentType: orders.fulfillmentType,
         status: orders.status,
       })
@@ -188,6 +193,23 @@ export function adminOrderRoutes(db: AppDb) {
         requestId: c.get('requestId'),
         metadata: { from: expectedStatus, to: status },
       });
+      const eventType =
+        status === 'confirmed'
+          ? 'ORDER_CONFIRMED'
+          : status === 'ready' && currentOrder.fulfillmentType === 'pickup'
+            ? 'ORDER_READY_PICKUP'
+            : status === 'dispatched'
+              ? 'ORDER_DISPATCHED'
+              : status === 'cancelled'
+                ? 'ORDER_CANCELLED'
+                : null;
+      if (eventType)
+        await enqueueNotificationIfEnabled(tx as unknown as AppDb, env, {
+          eventType,
+          orderId: currentOrder.id,
+          recipient: currentOrder.mobile,
+          publicNumber: currentOrder.publicNumber,
+        });
       return row;
     });
     return c.json({ order: updated });

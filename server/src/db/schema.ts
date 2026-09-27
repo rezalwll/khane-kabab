@@ -59,6 +59,22 @@ export const adminRoleEnum = pgEnum('admin_role', [
   'manager',
   'staff',
 ]);
+export const paymentAttemptStatusEnum = pgEnum('payment_attempt_status', [
+  'created',
+  'redirect_ready',
+  'pending',
+  'paid',
+  'failed',
+  'cancelled',
+]);
+export const notificationChannelEnum = pgEnum('notification_channel', ['sms']);
+export const notificationStatusEnum = pgEnum('notification_status', [
+  'pending',
+  'processing',
+  'sent',
+  'failed',
+  'skipped',
+]);
 
 export const adminUsers = pgTable(
   'admin_users',
@@ -334,6 +350,7 @@ export const orders = pgTable(
   'orders',
   {
     id: uuid('id').defaultRandom().primaryKey(),
+    clientOrderId: uuid('client_order_id').notNull(),
     publicNumber: text('public_number').notNull(),
     trackingTokenHash: text('tracking_token_hash').notNull(),
     status: orderStatusEnum('status').default('submitted').notNull(),
@@ -364,6 +381,7 @@ export const orders = pgTable(
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
   },
   (table) => [
+    uniqueIndex('orders_client_order_id_uidx').on(table.clientOrderId),
     uniqueIndex('orders_public_number_uidx').on(table.publicNumber),
     index('orders_status_idx').on(table.status),
     index('orders_created_at_idx').on(table.createdAt),
@@ -376,6 +394,95 @@ export const orders = pgTable(
     check('orders_total_nonnegative', sql`${table.totalToman} >= 0`),
   ],
 );
+
+export const paymentAttempts = pgTable(
+  'payment_attempts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'restrict' }),
+    provider: text('provider').notNull(),
+    amountToman: integer('amount_toman').notNull(),
+    status: paymentAttemptStatusEnum('status').default('created').notNull(),
+    providerReference: text('provider_reference'),
+    transactionReference: text('transaction_reference'),
+    failureCode: text('failure_code'),
+    ...timestamps,
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('payment_attempts_order_id_idx').on(table.orderId),
+    index('payment_attempts_status_idx').on(table.status),
+    check(
+      'payment_attempts_amount_nonnegative',
+      sql`${table.amountToman} >= 0`,
+    ),
+  ],
+);
+
+export const paymentSettings = pgTable('payment_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  onlinePaymentEnabled: boolean('online_payment_enabled')
+    .default(false)
+    .notNull(),
+  provider: text('provider'),
+  ...timestamps,
+});
+
+export const notificationOutbox = pgTable(
+  'notification_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    channel: notificationChannelEnum('channel').default('sms').notNull(),
+    eventType: text('event_type').notNull(),
+    orderId: uuid('order_id').references(() => orders.id, {
+      onDelete: 'set null',
+    }),
+    recipient: text('recipient').notNull(),
+    templateKey: text('template_key').notNull(),
+    payload: jsonb('payload')
+      .$type<Record<string, string>>()
+      .default({})
+      .notNull(),
+    status: notificationStatusEnum('status').default('pending').notNull(),
+    provider: text('provider'),
+    providerMessageId: text('provider_message_id'),
+    attempts: integer('attempts').default(0).notNull(),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+    lastErrorCode: text('last_error_code'),
+    ...timestamps,
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('notification_outbox_status_next_idx').on(
+      table.status,
+      table.nextAttemptAt,
+    ),
+    index('notification_outbox_order_id_idx').on(table.orderId),
+    index('notification_outbox_created_at_idx').on(table.createdAt),
+  ],
+);
+
+export const notificationSettings = pgTable('notification_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  smsEnabled: boolean('sms_enabled').default(false).notNull(),
+  provider: text('provider'),
+  notifyOrderSubmitted: boolean('notify_order_submitted')
+    .default(true)
+    .notNull(),
+  notifyOrderConfirmed: boolean('notify_order_confirmed')
+    .default(true)
+    .notNull(),
+  notifyOrderReady: boolean('notify_order_ready').default(true).notNull(),
+  notifyOrderDispatched: boolean('notify_order_dispatched')
+    .default(true)
+    .notNull(),
+  notifyOrderCancelled: boolean('notify_order_cancelled')
+    .default(true)
+    .notNull(),
+  ...timestamps,
+});
 
 export const orderItems = pgTable(
   'order_items',

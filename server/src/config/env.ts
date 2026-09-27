@@ -20,6 +20,17 @@ const envSchema = z.object({
   ADMIN_BOOTSTRAP_USERNAME: z.string().optional(),
   ADMIN_BOOTSTRAP_PASSWORD: z.string().optional(),
   ADMIN_BOOTSTRAP_DISPLAY_NAME: z.string().default('مدیر خانه کباب'),
+  PAYMENT_PROVIDER: z.string().default('disabled'),
+  PAYMENT_CALLBACK_BASE_URL: z.string().default(''),
+  PAYMENT_PROVIDER_CONFIGURED: z
+    .string()
+    .default('false')
+    .transform((value) => value === 'true'),
+  SMS_PROVIDER: z.string().default('disabled'),
+  SMS_PROVIDER_CONFIGURED: z
+    .string()
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema> & {

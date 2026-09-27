@@ -7,5 +7,6 @@ export const restaurant = {
   instagramLabel: '@Khane-kabab-tehran',
   instagramHref: 'https://instagram.com/Khane-kabab-tehran',
   menuUrl: '/menu/full',
-  story: 'گوشت تازه در حضور مشتری چرخ می‌شود و تنها با پیاز و نمک، بدون مواد افزودنی، به سیخ کشیده و کباب می‌شود.',
+  story:
+    'گوشت تازه در حضور مشتری چرخ می‌شود و تنها با پیاز و نمک، بدون مواد افزودنی، به سیخ کشیده و کباب می‌شود.',
 } as const;

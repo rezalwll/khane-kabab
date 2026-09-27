@@ -7,6 +7,7 @@ import {
   MenuSquare,
   ReceiptText,
   Settings,
+  MessageSquareText,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAdminAuth } from './admin-auth';
@@ -14,6 +15,7 @@ const links = [
   ['/admin', 'داشبورد', LayoutDashboard],
   ['/admin/orders', 'سفارش‌ها', ReceiptText],
   ['/admin/menu', 'منو', MenuSquare],
+  ['/admin/notifications', 'پیام‌ها', MessageSquareText],
   ['/admin/settings', 'تنظیمات', Settings],
 ] as const;
 export function AdminShell({ children }: { children: React.ReactNode }) {

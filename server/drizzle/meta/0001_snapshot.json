@@ -289,9 +289,7 @@
         "opening_hours_day_uq": {
           "name": "opening_hours_day_uq",
           "nullsNotDistinct": false,
-          "columns": [
-            "day_of_week"
-          ]
+          "columns": ["day_of_week"]
         }
       },
       "policies": {},
@@ -384,9 +382,7 @@
         "option_groups_name_uq": {
           "name": "option_groups_name_uq",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -483,12 +479,8 @@
           "name": "options_option_group_id_option_groups_id_fk",
           "tableFrom": "options",
           "tableTo": "option_groups",
-          "columnsFrom": [
-            "option_group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["option_group_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -498,10 +490,7 @@
         "options_group_name_uq": {
           "name": "options_group_name_uq",
           "nullsNotDistinct": false,
-          "columns": [
-            "option_group_id",
-            "name"
-          ]
+          "columns": ["option_group_id", "name"]
         }
       },
       "policies": {},
@@ -578,12 +567,8 @@
           "name": "order_item_options_order_item_id_order_items_id_fk",
           "tableFrom": "order_item_options",
           "tableTo": "order_items",
-          "columnsFrom": [
-            "order_item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["order_item_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -591,12 +576,8 @@
           "name": "order_item_options_option_id_options_id_fk",
           "tableFrom": "order_item_options",
           "tableTo": "options",
-          "columnsFrom": [
-            "option_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["option_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -707,12 +688,8 @@
           "name": "order_items_order_id_orders_id_fk",
           "tableFrom": "order_items",
           "tableTo": "orders",
-          "columnsFrom": [
-            "order_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -720,12 +697,8 @@
           "name": "order_items_product_id_products_id_fk",
           "tableFrom": "order_items",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1073,12 +1046,8 @@
           "name": "product_images_product_id_products_id_fk",
           "tableFrom": "product_images",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1088,10 +1057,7 @@
         "product_images_product_url_uq": {
           "name": "product_images_product_url_uq",
           "nullsNotDistinct": false,
-          "columns": [
-            "product_id",
-            "url"
-          ]
+          "columns": ["product_id", "url"]
         }
       },
       "policies": {},
@@ -1128,12 +1094,8 @@
           "name": "product_option_groups_product_id_products_id_fk",
           "tableFrom": "product_option_groups",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1141,12 +1103,8 @@
           "name": "product_option_groups_option_group_id_option_groups_id_fk",
           "tableFrom": "product_option_groups",
           "tableTo": "option_groups",
-          "columnsFrom": [
-            "option_group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["option_group_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1154,10 +1112,7 @@
       "compositePrimaryKeys": {
         "product_option_groups_product_id_option_group_id_pk": {
           "name": "product_option_groups_product_id_option_group_id_pk",
-          "columns": [
-            "product_id",
-            "option_group_id"
-          ]
+          "columns": ["product_id", "option_group_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1298,12 +1253,8 @@
           "name": "products_category_id_categories_id_fk",
           "tableFrom": "products",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1429,18 +1380,12 @@
     "public.coupon_type": {
       "name": "coupon_type",
       "schema": "public",
-      "values": [
-        "percentage",
-        "fixed"
-      ]
+      "values": ["percentage", "fixed"]
     },
     "public.fulfillment_type": {
       "name": "fulfillment_type",
       "schema": "public",
-      "values": [
-        "delivery",
-        "pickup"
-      ]
+      "values": ["delivery", "pickup"]
     },
     "public.order_status": {
       "name": "order_status",
@@ -1458,29 +1403,17 @@
     "public.payment_method": {
       "name": "payment_method",
       "schema": "public",
-      "values": [
-        "online",
-        "on_delivery"
-      ]
+      "values": ["online", "on_delivery"]
     },
     "public.payment_status": {
       "name": "payment_status",
       "schema": "public",
-      "values": [
-        "unpaid",
-        "pending",
-        "paid",
-        "failed",
-        "refunded"
-      ]
+      "values": ["unpaid", "pending", "paid", "failed", "refunded"]
     },
     "public.selection_type": {
       "name": "selection_type",
       "schema": "public",
-      "values": [
-        "single",
-        "multiple"
-      ]
+      "values": ["single", "multiple"]
     }
   },
   "schemas": {},

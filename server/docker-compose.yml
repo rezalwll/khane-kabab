@@ -7,11 +7,11 @@ services:
       POSTGRES_USER: khane_kabab_dev
       POSTGRES_PASSWORD: local-development-only
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - khane_kabab_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U khane_kabab_dev -d khane_kabab"]
+      test: ['CMD-SHELL', 'pg_isready -U khane_kabab_dev -d khane_kabab']
       interval: 5s
       timeout: 5s
       retries: 10

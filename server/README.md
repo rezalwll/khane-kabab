@@ -35,17 +35,17 @@ npm run admin:sessions:cleanup
 
 ## نقش‌ها
 
-| قابلیت | owner | manager | staff |
-|---|---:|---:|---:|
-| داشبورد و مشاهده سفارش | ✓ | ✓ | ✓ |
-| تغییر وضعیت سفارش | ✓ | ✓ | ✓ |
-| مشاهده منو | ✓ | ✓ | ✓ |
-| نوشتن منو/ساختار کاتالوگ | ✓ | ✓ | — |
-| مشاهده و ویرایش تنظیمات/ساعات | ✓ | ✓ | — |
+| قابلیت                        | owner | manager | staff |
+| ----------------------------- | ----: | ------: | ----: |
+| داشبورد و مشاهده سفارش        |     ✓ |       ✓ |     ✓ |
+| تغییر وضعیت سفارش             |     ✓ |       ✓ |     ✓ |
+| مشاهده منو                    |     ✓ |       ✓ |     ✓ |
+| نوشتن منو/ساختار کاتالوگ      |     ✓ |       ✓ |     — |
+| مشاهده و ویرایش تنظیمات/ساعات |     ✓ |       ✓ |     — |
 
 ## Endpointها
 
-عمومی: `GET /health`، `GET /api/v1/menu`، `GET /api/v1/products/:slug`، `POST /api/v1/coupons/validate`، `POST /api/v1/orders`، `GET /api/v1/orders/:publicNumber` با `X-Order-Token` و `GET /api/v1/restaurant`.
+عمومی: `GET /health`، `GET /api/v1/menu`، `GET /api/v1/products/:slug`، `POST /api/v1/coupons/validate`، `POST /api/v1/orders/quote`، `POST /api/v1/orders`، `GET /api/v1/orders/:publicNumber` با `X-Order-Token`، `POST /api/v1/payments/:publicNumber/start` و `GET /api/v1/restaurant`.
 
 مدیریت:
 
@@ -54,10 +54,22 @@ npm run admin:sessions:cleanup
 - orders: `GET /api/v1/admin/orders`، `GET /:id` و `PATCH /:id/status` با `expectedStatus`
 - menu: `GET /api/v1/admin/menu` و create/update دسته، محصول، موجودی، تصاویر metadata، گروه‌های افزودنی و optionها
 - settings: `GET/PATCH /api/v1/admin/settings` و `GET/PUT /api/v1/admin/opening-hours`
+- integrations: `GET/PATCH /api/v1/admin/integrations`
+- notifications: `GET /api/v1/admin/notifications` و `POST /:id/retry`
 
 همه پاسخ‌های authenticated ادمین `Cache-Control: no-store` دارند. عملیات ورود/خروج، رمز، سفارش، منو، تنظیمات و ساعات در `admin_audit_logs` ثبت می‌شوند؛ رمز، توکن خام و PII کامل در audit/log قرار نمی‌گیرند.
 
-ثبت سفارش عمومی در سرور `ordersEnabled`، روش فعال delivery/pickup و `minimumOrderToman` را روی subtotal پیش از تخفیف و بدون هزینه ارسال اعمال می‌کند. قیمت و موجودی فقط از دیتابیس خوانده می‌شوند.
+ثبت سفارش عمومی در سرور `ordersEnabled`، روش فعال delivery/pickup و `minimumOrderToman` را روی subtotal پیش از تخفیف و بدون هزینه ارسال اعمال می‌کند. قیمت و موجودی فقط از دیتابیس خوانده می‌شوند. `clientOrderId` یکتا است؛ retry همان سفارش را با توکن پیگیری تازه بازمی‌گرداند.
+
+## اتصال درگاه و پیامک
+
+adapter هر دو provider به‌طور پیش‌فرض `disabled` است. تنها تغییر toggle دیتابیس آن‌ها را فعال نمی‌کند؛ provider و secretها باید در environment سرور پیکربندی شوند. پیام‌ها در outbox ذخیره و با worker مستقل ارسال می‌شوند:
+
+```bash
+npm run notifications:work
+```
+
+rate limit عملیات quote، ثبت سفارش و شروع پرداخت process-local است. در اجرای چندنمونه‌ای باید با rate limiter توزیع‌شده جایگزین شود.
 
 ## Migration و QA
 
@@ -72,4 +84,4 @@ npm run build
 
 Migrationها فقط forward هستند و `drizzle-kit push` راهبرد production نیست. جداول امنیتی `admin_users`، `admin_sessions` و `admin_audit_logs` در migration فاز ۲B اضافه شده‌اند.
 
-محدودیت‌های فعلی: پرداخت، SMS/OTP، حساب مشتری، نقشه، WebSocket و بازیابی رمز با ایمیل/پیامک هنوز پیاده‌سازی نشده‌اند.
+محدودیت‌های فعلی: provider واقعی پرداخت و SMS، OTP، حساب مشتری، نقشه، WebSocket و بازیابی رمز با ایمیل/پیامک هنوز پیاده‌سازی نشده‌اند.

@@ -18,6 +18,28 @@ type Hours = {
   closeTime: string | null;
   isClosed: boolean;
 };
+type Integrations = {
+  payment: {
+    provider: string;
+    configured: boolean;
+    enabled: boolean;
+    effectiveEnabled: boolean;
+  };
+  notifications: {
+    provider: string;
+    configured: boolean;
+    enabled: boolean;
+    effectiveEnabled: boolean;
+    settings: {
+      smsEnabled: boolean;
+      notifyOrderSubmitted: boolean;
+      notifyOrderConfirmed: boolean;
+      notifyOrderReady: boolean;
+      notifyOrderDispatched: boolean;
+      notifyOrderCancelled: boolean;
+    } | null;
+  };
+};
 const days = [
   'یکشنبه',
   'دوشنبه',
@@ -30,6 +52,7 @@ const days = [
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [hours, setHours] = useState<Hours[]>([]);
+  const [integrations, setIntegrations] = useState<Integrations | null>(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [passwords, setPasswords] = useState({
@@ -38,11 +61,13 @@ export default function SettingsPage() {
   });
   const load = useCallback(async () => {
     try {
-      const [s, h] = await Promise.all([
+      const [s, h, i] = await Promise.all([
         adminApi.settings<{ settings: Settings }>(),
         adminApi.openingHours<{ openingHours: Hours[] }>(),
+        adminApi.integrations<Integrations>(),
       ]);
       setSettings(s.settings);
+      setIntegrations(i);
       const current = h.openingHours;
       setHours(
         Array.from(
@@ -106,6 +131,33 @@ export default function SettingsPage() {
     } catch {
       setMessage(
         'تغییر رمز ناموفق بود؛ رمز فعلی و حداقل ۱۲ نویسه را بررسی کنید.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function saveIntegrations() {
+    if (!integrations?.notifications.settings) return;
+    setBusy(true);
+    try {
+      const result = await adminApi.updateIntegrations<Integrations>({
+        onlinePaymentEnabled: integrations.payment.enabled,
+        smsEnabled: integrations.notifications.enabled,
+        notifyOrderSubmitted:
+          integrations.notifications.settings.notifyOrderSubmitted,
+        notifyOrderConfirmed:
+          integrations.notifications.settings.notifyOrderConfirmed,
+        notifyOrderReady: integrations.notifications.settings.notifyOrderReady,
+        notifyOrderDispatched:
+          integrations.notifications.settings.notifyOrderDispatched,
+        notifyOrderCancelled:
+          integrations.notifications.settings.notifyOrderCancelled,
+      });
+      setIntegrations(result);
+      setMessage('تنظیمات اتصال‌ها ذخیره شد.');
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error ? reason.message : 'ذخیره اتصال‌ها ناموفق بود.',
       );
     } finally {
       setBusy(false);
@@ -233,6 +285,107 @@ export default function SettingsPage() {
           ذخیره تنظیمات
         </button>
       </form>
+      {integrations && (
+        <section className="admin-panel integration-panel">
+          <h2>درگاه پرداخت و پیامک</h2>
+          <p className="section-note">
+            فعال‌سازی فقط زمانی ممکن است که سرویس در محیط سرور پیکربندی شده باشد.
+          </p>
+          <div className="integration-status">
+            <article>
+              <strong>درگاه پرداخت</strong>
+              <span>
+                {integrations.payment.configured
+                  ? 'پیکربندی‌شده'
+                  : 'پیکربندی نشده'}
+              </span>
+              <label>
+                <input
+                  type="checkbox"
+                  disabled={!integrations.payment.configured}
+                  checked={integrations.payment.enabled}
+                  onChange={(event) =>
+                    setIntegrations({
+                      ...integrations,
+                      payment: {
+                        ...integrations.payment,
+                        enabled: event.target.checked,
+                      },
+                    })
+                  }
+                />
+                پرداخت آنلاین فعال
+              </label>
+            </article>
+            <article>
+              <strong>سرویس پیامک</strong>
+              <span>
+                {integrations.notifications.configured
+                  ? 'پیکربندی‌شده'
+                  : 'پیکربندی نشده'}
+              </span>
+              <label>
+                <input
+                  type="checkbox"
+                  disabled={!integrations.notifications.configured}
+                  checked={integrations.notifications.enabled}
+                  onChange={(event) =>
+                    setIntegrations({
+                      ...integrations,
+                      notifications: {
+                        ...integrations.notifications,
+                        enabled: event.target.checked,
+                      },
+                    })
+                  }
+                />
+                پیامک فعال
+              </label>
+            </article>
+          </div>
+          {integrations.notifications.settings && (
+            <div className="check-row wide">
+              {(
+                [
+                  ['notifyOrderSubmitted', 'ثبت سفارش'],
+                  ['notifyOrderConfirmed', 'تایید سفارش'],
+                  ['notifyOrderReady', 'آماده تحویل'],
+                  ['notifyOrderDispatched', 'ارسال سفارش'],
+                  ['notifyOrderCancelled', 'لغو سفارش'],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key}>
+                  <input
+                    type="checkbox"
+                    checked={integrations.notifications.settings![key]}
+                    onChange={(event) =>
+                      setIntegrations({
+                        ...integrations,
+                        notifications: {
+                          ...integrations.notifications,
+                          settings: {
+                            ...integrations.notifications.settings!,
+                            [key]: event.target.checked,
+                          },
+                        },
+                      })
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            className="admin-primary"
+            disabled={busy}
+            onClick={() => void saveIntegrations()}
+          >
+            ذخیره اتصال‌ها
+          </button>
+        </section>
+      )}
       <section className="admin-panel">
         <h2>ساعات کاری</h2>
         <p className="section-note">

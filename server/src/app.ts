@@ -14,6 +14,9 @@ import { adminAuthRoutes } from './modules/admin/auth-routes.js';
 import { adminCatalogRoutes } from './modules/admin/catalog-routes.js';
 import { adminDashboardRoutes } from './modules/admin/dashboard-routes.js';
 import { adminOrderRoutes } from './modules/admin/order-routes.js';
+import { adminIntegrationRoutes } from './modules/admin/integration-routes.js';
+import { adminNotificationRoutes } from './modules/admin/notification-routes.js';
+import { paymentRoutes } from './modules/payments/routes.js';
 import {
   adminOpeningHoursRoutes,
   adminSettingsRoutes,
@@ -64,16 +67,33 @@ export function createApp({
     })(c, next);
   });
   app.route('/health', healthRoutes);
+  app.use('/api/v1/menu', async (c, next) => {
+    await next();
+    c.header('Cache-Control', 'no-store');
+  });
+  app.use('/api/v1/products/*', async (c, next) => {
+    await next();
+    c.header('Cache-Control', 'no-store');
+  });
+  app.use('/api/v1/restaurant', async (c, next) => {
+    await next();
+    c.header('Cache-Control', 'no-store');
+  });
   app.route('/api/v1/menu', menuRoutes(db));
   app.route('/api/v1/products', productRoutes(db));
   app.route('/api/v1/coupons', couponRoutes(db));
-  app.route('/api/v1/orders', orderRoutes(db));
-  app.route('/api/v1/restaurant', restaurantRoutes(db));
+  app.route('/api/v1/orders', orderRoutes(db, env));
+  app.route('/api/v1/payments', paymentRoutes(db, env));
+  app.route('/api/v1/restaurant', restaurantRoutes(db, env));
   app.route('/api/v1/admin/auth', adminAuthRoutes(db, env));
   app.use('/api/v1/admin/dashboard/*', requireAdmin(db));
   app.route('/api/v1/admin/dashboard', adminDashboardRoutes(db));
   app.use('/api/v1/admin/orders/*', requireAdmin(db));
-  app.route('/api/v1/admin/orders', adminOrderRoutes(db));
+  app.route('/api/v1/admin/orders', adminOrderRoutes(db, env));
+  app.use('/api/v1/admin/integrations/*', requireAdmin(db));
+  app.route('/api/v1/admin/integrations', adminIntegrationRoutes(db, env));
+  app.use('/api/v1/admin/notifications/*', requireAdmin(db));
+  app.route('/api/v1/admin/notifications', adminNotificationRoutes(db));
   app.use('/api/v1/admin/menu', requireAdmin(db));
   app.use('/api/v1/admin/categories/*', requireAdmin(db));
   app.use('/api/v1/admin/products/*', requireAdmin(db));

@@ -79,11 +79,7 @@ export const paperMenuSections: PaperMenuSection[] = [
     id: 'drinks',
     title: 'نوشیدنی‌ها',
     description: 'نوشیدنی‌های سرد همراه غذا',
-    items: [
-      { title: 'دوغ محلی' },
-      { title: 'دلستر' },
-      { title: 'نوشابه' },
-    ],
+    items: [{ title: 'دوغ محلی' }, { title: 'دلستر' }, { title: 'نوشابه' }],
   },
 ];
 

@@ -1,6 +1,13 @@
 export type DeliveryMethod = 'delivery' | 'pickup';
 export type PaymentMethod = 'online' | 'on-delivery';
-export type OrderStatus = 'submitted' | 'confirmed' | 'preparing' | 'ready' | 'delivered';
+export type OrderStatus =
+  | 'submitted'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'dispatched'
+  | 'delivered'
+  | 'cancelled';
 
 export type PricingSummary = {
   subtotal: number;
